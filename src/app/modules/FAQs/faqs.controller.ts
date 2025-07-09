@@ -1,7 +1,7 @@
-import { catchAsync } from 'src/app/utils/catchAsync';
 import { FAQsServices } from './faqs.service';
-import sendResponse from 'src/app/utils/sendResponse';
+import sendResponse from './../../utils/sendResponse';
 import httpStatus from 'http-status';
+import { catchAsync } from './../../utils/catchAsync';
 
 const createFAQ = catchAsync(async (req, res) => {
   const result = await FAQsServices.createFAQIntoDB(req.body);

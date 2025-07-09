@@ -1,4 +1,4 @@
-import AppError from 'src/app/errors/AppError';
+import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import { TPricing } from './pricing.interface';
 import { Pricing } from './pricing.model';

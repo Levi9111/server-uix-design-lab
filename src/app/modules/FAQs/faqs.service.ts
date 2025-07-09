@@ -1,4 +1,4 @@
-import AppError from 'src/app/errors/AppError';
+import AppError from '../../errors/AppError';
 import { TFAQ } from './faqs.interface';
 import { FAQ } from './faqs.model';
 import httpStatus from 'http-status';

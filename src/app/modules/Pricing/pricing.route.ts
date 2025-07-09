@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PricingControllers } from './pricing.controller';
-import validateRequest from 'src/app/middlewares/validateRequest';
+import validateRequest from '../../middlewares/validateRequest';
 import { PricingValidations } from './pricing.validation';
 
 const router = Router();

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { FAQsContorllers } from './faqs.controller';
-import validateRequest from 'src/app/middlewares/validateRequest';
+import validateRequest from '../../middlewares/validateRequest';
 import { faqValidations } from './faqs.validation';
 
 const router = Router();
