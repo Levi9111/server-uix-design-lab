@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { FAQsContorllers } from './faqs.controller';
+import validateRequest from 'src/app/middlewares/validateRequest';
+import { faqValidations } from './faqs.validation';
 
 const router = Router();
 
@@ -7,10 +9,18 @@ router.get('/', FAQsContorllers.getAllFAQs);
 
 router.get('/:id', FAQsContorllers.getSingleFAQ);
 
-router.post('/', FAQsContorllers.createFAQ);
+router.post(
+  '/',
+  validateRequest(faqValidations.createFAQValidationSchema),
+  FAQsContorllers.createFAQ,
+);
 
-router.patch('/id', FAQsContorllers.updateFAQ);
+router.patch(
+  '/update-faq/id',
+  validateRequest(faqValidations.updateFAQValidationSchema),
+  FAQsContorllers.updateFAQ,
+);
 
-router.delete('/:id', FAQsContorllers.deleteFAQ);
+router.delete('/delete-faq/:id', FAQsContorllers.deleteFAQ);
 
-export const FAQsRouter = router;
+export const FAQsRoute = router;
