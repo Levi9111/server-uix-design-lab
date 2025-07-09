@@ -1,0 +1,17 @@
+1. Add/Update/Remove new projects functionality with image.
+
+2. Add/Update/Remove new Reveiws functionality with image.
+
+3. Add/Update/Remove new FAQ functionality.
+
+4. Features
+
+5. Pricing Plans
+
+6. Contact section informations controlls
+
+7. Create a launch project functionality after selecting the pricing plan.
+
+8. Create a proceed functionality after selecting a service in the choose a service section
+
+9. Create a login functionality. One for visitor and another more secured for the Admin and modarators.
