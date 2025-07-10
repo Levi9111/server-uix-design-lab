@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { FAQsRoute } from '../modules/FAQs/faqs.route';
 import { PricingRoute } from '../modules/Pricing/pricing.route';
 import { FeaturesRoute } from '../modules/Features/features.route';
+import { ProjectRoutes } from '../modules/Projects/projects.route';
 
 const router = Router();
 
@@ -26,6 +27,10 @@ const moduleRoutes = [
   {
     path: '/features',
     router: FeaturesRoute,
+  },
+  {
+    path: '/projects',
+    router: ProjectRoutes,
   },
 ];
 
