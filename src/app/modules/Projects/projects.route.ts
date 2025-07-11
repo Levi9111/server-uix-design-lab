@@ -27,6 +27,6 @@ router.get('/', ProjectsControllers.getAllProjects);
 
 router.get('/:id', ProjectsControllers.getSingleProject);
 
-router.delete('/:id', ProjectsControllers.deleteProject);
+router.delete('/delete-project/:id', ProjectsControllers.deleteProject);
 
 export const ProjectRoutes = router;

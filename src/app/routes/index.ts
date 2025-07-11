@@ -17,7 +17,7 @@ const moduleRoutes = [
     router: testRoute,
   },
   {
-    path: '/faq',
+    path: '/faqs',
     router: FAQsRoute,
   },
   {

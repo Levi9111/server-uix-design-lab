@@ -16,7 +16,7 @@ router.post(
 );
 
 router.patch(
-  '/update-faq/id',
+  '/update-faq/:id',
   validateRequest(faqValidations.updateFAQValidationSchema),
   FAQsContorllers.updateFAQ,
 );
