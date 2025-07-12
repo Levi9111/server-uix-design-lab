@@ -12,9 +12,9 @@ const createReviewIntoDB = async (req: Request) => {
     req.body.product.imageUrl = uploadToCloudinary.secure_url;
   }
 
-  const { product } = req.body;
+  const { review } = req.body;
 
-  const result = await Reviews.create(product);
+  const result = await Reviews.create(review);
   return result;
 };
 

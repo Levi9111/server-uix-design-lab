@@ -12,9 +12,9 @@ const createProjectIntoDB = async (req: Request) => {
     req.body.product.projectImageUrl = uploadToCloudinary.secure_url;
   }
 
-  const { product } = req.body;
+  const { project } = req.body;
 
-  const result = await Projects.create(product);
+  const result = await Projects.create(project);
   return result;
 };
 
