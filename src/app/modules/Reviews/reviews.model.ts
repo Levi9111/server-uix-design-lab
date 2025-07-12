@@ -42,6 +42,11 @@ const reveiwsSchema = new Schema<TReviews>(
       of: String,
       default: {},
     },
+    isDeleted: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   { timestamps: true },
 );

@@ -12,4 +12,5 @@ export type TReviews = {
   stats: {
     [key: string]: string;
   };
+  isDeleted: boolean;
 };

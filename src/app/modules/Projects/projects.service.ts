@@ -9,7 +9,7 @@ import { fileUploader } from '../../../app/utils/fileUploader';
 const createProjectIntoDB = async (req: Request) => {
   if (req.file) {
     const uploadToCloudinary = await fileUploader.uploadToCloudinary(req.file);
-    req.body.product.productImgUrl = uploadToCloudinary.secure_url;
+    req.body.product.projectImageUrl = uploadToCloudinary.secure_url;
   }
 
   const { product } = req.body;
