@@ -10,10 +10,7 @@ const createReviewValidationSchema = z.object({
       description: z.string().trim().min(1, 'Description is required'),
       roi: z.string().trim().min(1, 'ROI is required'),
       revenue: z.string().trim().min(1, 'Revenue is required'),
-      imageUrl: z.string().url('Image URL must be a valid URL'),
-      color: z.string().trim().min(1, 'Color is required'),
-
-      // Dynamic stats object
+      // imageUrl: z.string().url('Image URL must be a valid URL'),
       stats: z
         .record(z.string().min(1, 'Stat value cannot be empty'))
         .optional(),
@@ -24,17 +21,13 @@ const createReviewValidationSchema = z.object({
 // Schema for updating a review — all fields optional
 const updateReviewValidationSchema = z.object({
   body: z.object({
-    review: z.object({
-      title: z.string().trim().optional(),
-      name: z.string().trim().optional(),
-      role: z.string().trim().optional(),
-      description: z.string().trim().optional(),
-      roi: z.string().trim().optional(),
-      revenue: z.string().trim().optional(),
-      imageUrl: z.string().url('Image URL must be a valid URL').optional(),
-      color: z.string().trim().optional(),
-      stats: z.record(z.string().min(1)).optional(),
-    }),
+    title: z.string().trim().optional(),
+    name: z.string().trim().optional(),
+    role: z.string().trim().optional(),
+    description: z.string().trim().optional(),
+    roi: z.string().trim().optional(),
+    revenue: z.string().trim().optional(),
+    stats: z.record(z.string()).optional(),
   }),
 });
 

@@ -3,13 +3,13 @@ import { TReviews } from './reviews.interface';
 import { Reviews } from './reviews.model';
 import httpStatus from 'http-status';
 import { Request } from 'express';
-import { fileUploader } from 'src/app/utils/fileUploader';
+import { fileUploader } from '../../../app/utils/fileUploader';
 
 // Create Review
 const createReviewIntoDB = async (req: Request) => {
   if (req.file) {
     const uploadToCloudinary = await fileUploader.uploadToCloudinary(req.file);
-    req.body.product.imageUrl = uploadToCloudinary.secure_url;
+    req.body.review.imageUrl = uploadToCloudinary.secure_url;
   }
 
   const { review } = req.body;

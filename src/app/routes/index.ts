@@ -7,16 +7,7 @@ import { ReviewsRoute } from '../modules/Reviews/reviews.route';
 
 const router = Router();
 
-const testRoute = (_req: Request, res: Response) => {
-  const message = 'Server for UIX Design Lab';
-  res.send(message);
-};
-
 const moduleRoutes = [
-  {
-    path: '/',
-    router: testRoute,
-  },
   {
     path: '/faqs',
     router: FAQsRoute,

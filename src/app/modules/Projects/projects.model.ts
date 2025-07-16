@@ -12,10 +12,6 @@ const projectsSchema = new Schema<TProjects>(
       type: String,
       required: true,
     },
-    icon: {
-      type: String,
-      required: true,
-    },
     projectImageUrl: {
       type: String,
       required: true,

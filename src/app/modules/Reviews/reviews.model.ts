@@ -33,10 +33,6 @@ const reveiwsSchema = new Schema<TReviews>(
       type: String,
       required: true,
     },
-    color: {
-      type: String,
-      required: true,
-    },
     stats: {
       type: Map,
       of: String,

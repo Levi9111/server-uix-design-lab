@@ -8,7 +8,6 @@ export type TReviews = {
   revenue: string;
   avatarInitials: string;
   imageUrl: string;
-  color: string;
   stats: {
     [key: string]: string;
   };

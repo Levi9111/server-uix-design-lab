@@ -4,7 +4,7 @@ import httpStatus from 'http-status';
 import { catchAsync } from './../../utils/catchAsync';
 
 const createReview = catchAsync(async (req, res) => {
-  const result = await ReviewsServices.createReviewIntoDB(req.body);
+  const result = await ReviewsServices.createReviewIntoDB(req);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
