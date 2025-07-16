@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { FAQsRoute } from '../modules/FAQs/faqs.route';
 import { PricingRoute } from '../modules/Pricing/pricing.route';
 import { FeaturesRoute } from '../modules/Features/features.route';
