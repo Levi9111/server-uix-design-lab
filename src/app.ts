@@ -8,7 +8,14 @@ import notFound from './app/middlewares/notFound';
 const app: Application = express();
 
 //parsers
-app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
+// app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
+app.use(
+  cors({
+    origin: ['https://dashboard-uix-design-lab.vercel.app/'],
+    credentials: true,
+  }),
+);
+
 // app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
