@@ -11,7 +11,7 @@ const app: Application = express();
 // app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
 app.use(
   cors({
-    origin: ['https://dashboard-uix-design-lab.vercel.app/'],
+    origin: ['https://dashboard-uix-design-lab.vercel.app'],
     credentials: true,
   }),
 );
