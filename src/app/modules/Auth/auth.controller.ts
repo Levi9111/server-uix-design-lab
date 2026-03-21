@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 
 import { AuthServices } from './auth.service';
+import { TJwtPayload } from './auth.interface';
 import config from '../../config';
 import { catchAsync } from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
@@ -73,7 +74,7 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 const logout = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.logout(req.user!.userId);
+  await AuthServices.logout((req.user as TJwtPayload).userId);
 
   res.clearCookie('refreshToken', {
     httpOnly: true,
@@ -90,7 +91,10 @@ const logout = catchAsync(async (req: Request, res: Response) => {
 
 // ─── Change Password ──────────────────────────────────────────────────────────
 const changePassword = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.changePasswordIntoDB(req.user!.userId, req.body);
+  await AuthServices.changePasswordIntoDB(
+    (req.user as TJwtPayload).userId,
+    req.body,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -142,7 +146,9 @@ const oauthCallback = catchAsync(async (req: Request, res: Response) => {
 
 // ─── Get Me ───────────────────────────────────────────────────────────────────
 const getMe = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthServices.getMeFromDB(req.user!.userId);
+  const result = await AuthServices.getMeFromDB(
+    (req.user as TJwtPayload).userId,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
