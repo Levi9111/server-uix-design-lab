@@ -1,11 +1,14 @@
-import { IJwtPayload } from '../modules/Auth/auth.interface';
+import {
+  TJwtPayload,
+  TOAuthCallbackUser,
+} from '../modules/Auth/auth.interface';
 
 declare global {
   namespace Express {
-    // Merge IJwtPayload into Express.User so req.user.userId etc. are recognized
-    interface User extends IJwtPayload {}
+    // Allow Express.User to be either a JWT payload or an OAuth callback user
+    interface User extends Partial<TJwtPayload>, Partial<TOAuthCallbackUser> {}
     interface Request {
-      user?: IJwtPayload;
+      user?: TJwtPayload | TOAuthCallbackUser;
     }
   }
 }

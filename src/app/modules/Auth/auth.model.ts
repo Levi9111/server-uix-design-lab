@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt';
 import { Schema, model } from 'mongoose';
-import { IUser, IUserModel, IOAuthProfile, USER_ROLE } from './auth.interface';
+import { TUser, IUserModel, TOAuthProfile, USER_ROLE } from './auth.interface';
 import config from '../../config';
 
 // ─── OAuth Sub-Schema ─────────────────────────────────────────────────────────
-const oauthProfileSchema = new Schema<IOAuthProfile>(
+const oauthProfileSchema = new Schema<TOAuthProfile>(
   {
     provider: {
       type: String,
@@ -19,17 +19,17 @@ const oauthProfileSchema = new Schema<IOAuthProfile>(
 );
 
 // ─── User Schema ──────────────────────────────────────────────────────────────
-const userSchema = new Schema<IUser, IUserModel>(
+const userSchema = new Schema<TUser, IUserModel>(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: true,
       trim: true,
       maxlength: [60, 'Name cannot exceed 60 characters'],
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: true,
       unique: true,
       lowercase: true,
       trim: true,
@@ -37,7 +37,7 @@ const userSchema = new Schema<IUser, IUserModel>(
     },
     password: {
       type: String,
-      select: false, // never returned by default
+      select: false,
       minlength: [8, 'Password must be at least 8 characters'],
     },
     role: {
@@ -51,15 +51,15 @@ const userSchema = new Schema<IUser, IUserModel>(
     isDeleted: { type: Boolean, default: false },
     oauthProfiles: { type: [oauthProfileSchema], default: [] },
     passwordChangedAt: { type: Date },
-    refreshToken: { type: String, select: false }, // hashed, never returned
+    refreshToken: { type: String, select: false },
   },
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret: any) {
-        delete ret.password;
-        delete ret.refreshToken;
-        delete ret.__v;
+      transform(_doc, ret) {
+        delete (ret as Record<string, unknown>).password;
+        delete (ret as Record<string, unknown>).refreshToken;
+        delete (ret as Record<string, unknown>).__v;
         return ret;
       },
     },
@@ -86,7 +86,6 @@ userSchema.pre('save', async function (next) {
 // ─── Pre-save: Track Password Change ─────────────────────────────────────────
 userSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
-  // Subtract 1s so that token issued right after change is still valid
   this.passwordChangedAt = new Date(Date.now() - 1000);
   next();
 });
@@ -118,5 +117,4 @@ userSchema.statics.isJWTIssuedBeforePasswordChanged = function (
   return passwordChangedAt.getTime() / 1000 > jwtIssuedAt;
 };
 
-const User = model<IUser, IUserModel>('User', userSchema);
-export default User;
+export const User = model<TUser, IUserModel>('User', userSchema);

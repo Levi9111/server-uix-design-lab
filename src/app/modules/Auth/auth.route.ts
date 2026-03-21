@@ -1,117 +1,48 @@
-import express from 'express';
+import { Router } from 'express';
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as GitHubStrategy } from 'passport-github2';
 
 import { USER_ROLE } from './auth.interface';
 import { AuthControllers } from './auth.controller';
-
-import * as V from './auth.validation';
+import { authValidations } from './auth.validation';
 import config from '../../config';
 import validateRequest from '../../middlewares/validateRequest';
 import auth from '../../middlewares/auth';
 
-const router = express.Router();
+const router = Router();
 
-// ─── Passport: Google Strategy ────────────────────────────────────────────────
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: config.google_client_id as string,
-      clientSecret: config.google_client_secret as string,
-      callbackURL: `${config.server_url}/api/v1/auth/google/callback`,
-      scope: ['profile', 'email'],
-    },
-    async (_accessToken, _refreshToken, profile, done) => {
-      try {
-        const email = profile.emails?.[0]?.value;
-        if (!email) return done(new Error('No email from Google'), false);
-
-        // Pass a normalized profile — service handles find-or-create
-        done(null, {
-          provider: 'google' as const,
-          providerId: profile.id,
-          name: profile.displayName,
-          email,
-          profilePhoto: profile.photos?.[0]?.value,
-          accessToken: _accessToken,
-        });
-      } catch (err: any) {
-        done(err, false);
-      }
-    },
-  ),
-);
-
-// ─── Passport: GitHub Strategy ────────────────────────────────────────────────
-passport.use(
-  new GitHubStrategy(
-    {
-      clientID: config.github_client_id as string,
-      clientSecret: config.github_client_secret as string,
-      callbackURL: `${config.server_url}/api/v1/auth/github/callback`,
-      scope: ['user:email'],
-    },
-    async (
-      _accessToken: string,
-      _refreshToken: string,
-      profile: any,
-      done: any,
-    ) => {
-      try {
-        const email =
-          profile.emails?.find((e: any) => e.primary)?.value ||
-          profile.emails?.[0]?.value;
-
-        if (!email) return done(new Error('No email from GitHub'), false);
-
-        done(null, {
-          provider: 'github' as const,
-          providerId: profile.id,
-          name: profile.displayName || profile.username,
-          email,
-          profilePhoto: profile.photos?.[0]?.value,
-          accessToken: _accessToken,
-        });
-      } catch (err: any) {
-        done(err, false);
-      }
-    },
-  ),
-);
-
-// Minimal session serialization (we use JWT, not sessions)
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user: any, done) => done(null, user));
+// ─── Callback URLs ────────────────────────────────────────────────────────────
+// Single source of truth — must match Google/GitHub Console exactly
+export const GOOGLE_CALLBACK_URL = `${config.server_url}/api/v1/auth/google/callback`;
+export const GITHUB_CALLBACK_URL = `${config.server_url}/api/v1/auth/github/callback`;
 
 // ─── Public Routes ────────────────────────────────────────────────────────────
 router.post(
   '/register',
-  validateRequest(V.registerValidationSchema),
+  validateRequest(authValidations.registerValidationSchema),
   AuthControllers.register,
 );
 
 router.post(
   '/login',
-  validateRequest(V.loginValidationSchema),
+  validateRequest(authValidations.loginValidationSchema),
   AuthControllers.login,
 );
 
 router.post(
   '/refresh-token',
-  validateRequest(V.refreshTokenValidationSchema),
+  validateRequest(authValidations.refreshTokenValidationSchema),
   AuthControllers.refreshToken,
 );
 
 router.post(
   '/forgot-password',
-  validateRequest(V.forgotPasswordValidationSchema),
+  validateRequest(authValidations.forgotPasswordValidationSchema),
   AuthControllers.forgotPassword,
 );
 
 router.post(
   '/reset-password',
-  validateRequest(V.resetPasswordValidationSchema),
+  validateRequest(authValidations.resetPasswordValidationSchema),
   AuthControllers.resetPassword,
 );
 
@@ -128,7 +59,7 @@ router.get(
   '/google/callback',
   passport.authenticate('google', {
     session: false,
-    failureRedirect: '/login',
+    failureRedirect: `${config.client_url}/login`,
   }),
   AuthControllers.oauthCallback,
 );
@@ -143,12 +74,12 @@ router.get(
   '/github/callback',
   passport.authenticate('github', {
     session: false,
-    failureRedirect: '/login',
+    failureRedirect: `${config.client_url}/login`,
   }),
   AuthControllers.oauthCallback,
 );
 
-// ─── Protected Routes (any authenticated user) ────────────────────────────────
+// ─── Protected Routes ─────────────────────────────────────────────────────────
 router.get('/me', auth(), AuthControllers.getMe);
 
 router.post('/logout', auth(), AuthControllers.logout);
@@ -156,26 +87,26 @@ router.post('/logout', auth(), AuthControllers.logout);
 router.post(
   '/change-password',
   auth(),
-  validateRequest(V.changePasswordValidationSchema),
+  validateRequest(authValidations.changePasswordValidationSchema),
   AuthControllers.changePassword,
 );
 
-// ─── RBAC: Admin-only Routes ──────────────────────────────────────────────────
+// ─── Admin Routes ─────────────────────────────────────────────────────────────
 router.patch(
-  '/users/:userId/role',
+  '/update-role/:userId',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
-  validateRequest(V.updateRoleValidationSchema),
+  validateRequest(authValidations.updateRoleValidationSchema),
   AuthControllers.updateUserRole,
 );
 
 router.patch(
-  '/users/:userId/block',
+  '/block-user/:userId',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   AuthControllers.blockUser,
 );
 
 router.patch(
-  '/users/:userId/unblock',
+  '/unblock-user/:userId',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   AuthControllers.unblockUser,
 );

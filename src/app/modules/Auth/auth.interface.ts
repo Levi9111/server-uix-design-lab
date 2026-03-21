@@ -9,36 +9,45 @@ export const USER_ROLE = {
   user: 'user',
 } as const;
 
-// ─── OAuth Provider ───────────────────────────────────────────────────────────
+// ─── OAuth ────────────────────────────────────────────────────────────────────
 export type TOAuthProvider = 'google' | 'github' | 'local';
 
-export interface IOAuthProfile {
+export type TOAuthProfile = {
   provider: TOAuthProvider;
   providerId: string;
   accessToken?: string | undefined;
   refreshToken?: string | undefined;
-}
+};
 
-// ─── User Document ────────────────────────────────────────────────────────────
-export interface IUser {
+export type TOAuthCallbackUser = {
+  provider: TOAuthProvider;
+  providerId: string;
   name: string;
   email: string;
-  password?: string; // optional for OAuth users
+  profilePhoto?: string | undefined;
+  accessToken?: string;
+};
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+export type TUser = {
+  name: string;
+  email: string;
+  password?: string;
   role: TUserRole;
   profilePhoto?: string | undefined;
   isVerified: boolean;
   isBlocked: boolean;
   isDeleted: boolean;
-  oauthProfiles: IOAuthProfile[];
+  oauthProfiles: TOAuthProfile[];
   passwordChangedAt?: Date;
-  refreshToken?: string; // hashed refresh token stored in DB
+  refreshToken?: string;
   createdAt?: Date;
   updatedAt?: Date;
-}
+};
 
 // ─── Statics ──────────────────────────────────────────────────────────────────
-export interface IUserModel extends Model<IUser & Document> {
-  isUserExistsByEmail(email: string): Promise<(IUser & Document) | null>;
+export interface IUserModel extends Model<TUser & Document> {
+  isUserExistsByEmail(email: string): Promise<(TUser & Document) | null>;
   isPasswordMatched(plain: string, hashed: string): Promise<boolean>;
   isJWTIssuedBeforePasswordChanged(
     passwordChangedAt: Date,
@@ -46,51 +55,47 @@ export interface IUserModel extends Model<IUser & Document> {
   ): boolean;
 }
 
-// ─── Token Payloads ───────────────────────────────────────────────────────────
-export interface IJwtPayload {
+// ─── JWT ──────────────────────────────────────────────────────────────────────
+export type TJwtPayload = {
   userId: string;
   email: string;
   role: TUserRole;
-}
+};
 
 // ─── Request Bodies ───────────────────────────────────────────────────────────
-export interface IRegisterBody {
+export type TRegisterBody = {
   name: string;
   email: string;
   password: string;
   role?: TUserRole;
-}
+};
 
-export interface ILoginBody {
+export type TLoginBody = {
   email: string;
   password: string;
-}
+};
 
-export interface IRefreshTokenBody {
-  refreshToken: string;
-}
-
-export interface IChangePasswordBody {
+export type TChangePasswordBody = {
   oldPassword: string;
   newPassword: string;
-}
+};
 
-export interface IForgotPasswordBody {
+export type TForgotPasswordBody = {
   email: string;
-}
+};
 
-export interface IResetPasswordBody {
+export type TResetPasswordBody = {
   token: string;
   newPassword: string;
-}
+};
 
-// ─── Auth Service Return Types ────────────────────────────────────────────────
-export interface IAuthTokens {
+// ─── Return Types ─────────────────────────────────────────────────────────────
+export type TAuthTokens = {
   accessToken: string;
   refreshToken: string;
-}
+};
 
-export interface ILoginResult {
-  user: Partial<IUser>;
-  tokens: IAuthTokens;
-}
+export type TLoginResult = {
+  user: Partial<TUser>;
+  tokens: TAuthTokens;
+};

@@ -4,8 +4,8 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import config from '../config';
 import AppError from '../errors/AppError';
 import { catchAsync } from '../utils/catchAsync';
-import { IJwtPayload, TUserRole } from '../modules/Auth/auth.interface';
-import User from '../modules/Auth/auth.model';
+import { TUserRole } from '../modules/Auth/auth.interface';
+import { User } from '../modules/Auth/auth.model';
 
 // ─── Extend Express Request ───────────────────────────────────────────────────
 

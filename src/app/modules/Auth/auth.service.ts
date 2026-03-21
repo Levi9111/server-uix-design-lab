@@ -1,52 +1,43 @@
 import crypto from 'crypto';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import type { StringValue } from 'ms';
+import httpStatus from 'http-status';
 
 import {
-  IAuthTokens,
-  IChangePasswordBody,
-  IForgotPasswordBody,
-  IJwtPayload,
-  ILoginBody,
-  ILoginResult,
-  IRegisterBody,
-  IResetPasswordBody,
-  IOAuthProfile,
+  TAuthTokens,
+  TChangePasswordBody,
+  TForgotPasswordBody,
+  TJwtPayload,
+  TLoginBody,
+  TLoginResult,
+  TRegisterBody,
+  TResetPasswordBody,
+  TOAuthProfile,
+  TUserRole,
 } from './auth.interface';
-import User from './auth.model';
-import httpStatus from 'http-status';
-import config from '../../config';
+import { User } from './auth.model';
 import AppError from '../../errors/AppError';
+import config from '../../config';
 import { sendEmail } from '../../utils/sendEmail';
 
 // ─── Token Helpers ────────────────────────────────────────────────────────────
-
-/** Sign a short-lived access token */
-const signAccessToken = (payload: IJwtPayload): string => {
-  const options = {
+const signAccessToken = (payload: TJwtPayload): string =>
+  jwt.sign(payload, config.jwt_access_secret as string, {
     expiresIn: config.jwt_access_expires_in as StringValue,
-  };
-  return jwt.sign(payload, config.jwt_access_secret as string, options);
-};
+  });
 
-/** Sign a long-lived refresh token */
-const signRefreshToken = (payload: IJwtPayload): string => {
-  const options = {
+const signRefreshToken = (payload: TJwtPayload): string =>
+  jwt.sign(payload, config.jwt_refresh_secret as string, {
     expiresIn: config.jwt_refresh_expires_in as StringValue,
-  };
-  return jwt.sign(payload, config.jwt_refresh_secret as string, options);
-};
+  });
 
-/** Hash a refresh token before storing in DB (treat like a password) */
 const hashToken = (token: string): string =>
   crypto.createHash('sha256').update(token).digest('hex');
 
-/** Issue both tokens and persist the hashed refresh token */
-const issueTokens = async (payload: IJwtPayload): Promise<IAuthTokens> => {
+const issueTokens = async (payload: TJwtPayload): Promise<TAuthTokens> => {
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
-  // Store hashed refresh token – enables single-use rotation & invalidation
   await User.findByIdAndUpdate(payload.userId, {
     refreshToken: hashToken(refreshToken),
   });
@@ -55,15 +46,17 @@ const issueTokens = async (payload: IJwtPayload): Promise<IAuthTokens> => {
 };
 
 // ─── Register ─────────────────────────────────────────────────────────────────
-const register = async (payload: IRegisterBody): Promise<ILoginResult> => {
+const registerIntoDB = async (
+  payload: TRegisterBody,
+): Promise<TLoginResult> => {
   const existing = await User.isUserExistsByEmail(payload.email);
-  if (existing) {
+
+  if (existing)
     throw new AppError(httpStatus.CONFLICT, 'Email already registered');
-  }
 
   const user = await User.create(payload);
 
-  const jwtPayload: IJwtPayload = {
+  const jwtPayload: TJwtPayload = {
     userId: String(user._id),
     email: user.email,
     role: user.role,
@@ -84,7 +77,7 @@ const register = async (payload: IRegisterBody): Promise<ILoginResult> => {
 };
 
 // ─── Login ────────────────────────────────────────────────────────────────────
-const login = async (payload: ILoginBody): Promise<ILoginResult> => {
+const loginFromDB = async (payload: TLoginBody): Promise<TLoginResult> => {
   const user = await User.isUserExistsByEmail(payload.email);
 
   if (!user) throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid credentials');
@@ -102,10 +95,11 @@ const login = async (payload: ILoginBody): Promise<ILoginResult> => {
     );
 
   const isMatch = await User.isPasswordMatched(payload.password, user.password);
+
   if (!isMatch)
     throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid credentials');
 
-  const jwtPayload: IJwtPayload = {
+  const jwtPayload: TJwtPayload = {
     userId: String(user._id),
     email: user.email,
     role: user.role,
@@ -128,7 +122,7 @@ const login = async (payload: ILoginBody): Promise<ILoginResult> => {
 // ─── Refresh Token Rotation ───────────────────────────────────────────────────
 const refreshTokens = async (
   incomingRefreshToken: string,
-): Promise<IAuthTokens> => {
+): Promise<TAuthTokens> => {
   let decoded: JwtPayload;
 
   try {
@@ -146,15 +140,15 @@ const refreshTokens = async (
   const user = await User.findById(decoded.userId).select(
     '+refreshToken +password',
   );
+
   if (!user) throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
 
   if (user.isBlocked || user.isDeleted)
     throw new AppError(httpStatus.FORBIDDEN, 'Account is inactive');
 
-  // ── Rotation check: incoming token must match the stored hash ────────────
   const incomingHash = hashToken(incomingRefreshToken);
+
   if (user.refreshToken !== incomingHash) {
-    // Possible token reuse — invalidate all sessions (security measure)
     await User.findByIdAndUpdate(decoded.userId, { refreshToken: null });
     throw new AppError(
       httpStatus.UNAUTHORIZED,
@@ -162,7 +156,6 @@ const refreshTokens = async (
     );
   }
 
-  // ── Password changed after token issued? ─────────────────────────────────
   if (
     user.passwordChangedAt &&
     User.isJWTIssuedBeforePasswordChanged(
@@ -176,13 +169,12 @@ const refreshTokens = async (
     );
   }
 
-  const jwtPayload: IJwtPayload = {
+  const jwtPayload: TJwtPayload = {
     userId: String(user._id),
     email: user.email,
     role: user.role,
   };
 
-  // Issue brand-new token pair (rotation)
   return issueTokens(jwtPayload);
 };
 
@@ -192,11 +184,12 @@ const logout = async (userId: string): Promise<void> => {
 };
 
 // ─── Change Password ──────────────────────────────────────────────────────────
-const changePassword = async (
+const changePasswordIntoDB = async (
   userId: string,
-  payload: IChangePasswordBody,
+  payload: TChangePasswordBody,
 ): Promise<void> => {
   const user = await User.findById(userId).select('+password');
+
   if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
 
   if (!user.password)
@@ -209,21 +202,23 @@ const changePassword = async (
     payload.oldPassword,
     user.password,
   );
+
   if (!isMatch)
     throw new AppError(httpStatus.UNAUTHORIZED, 'Old password is incorrect');
 
   user.password = payload.newPassword;
-  await user.save(); // triggers pre-save hash + passwordChangedAt
+  await user.save();
+
+  // Invalidate all sessions after password change
+  await User.findByIdAndUpdate(userId, { refreshToken: null });
 };
 
 // ─── Forgot Password ──────────────────────────────────────────────────────────
-const forgotPassword = async (payload: IForgotPasswordBody): Promise<void> => {
+const forgotPassword = async (payload: TForgotPasswordBody): Promise<void> => {
   const user = await User.isUserExistsByEmail(payload.email);
 
-  // Always respond OK to prevent email enumeration
   if (!user || user.isDeleted || user.isBlocked) return;
 
-  // Create a signed, short-lived reset token (10 min)
   const resetToken = jwt.sign(
     { userId: String(user._id), email: user.email },
     config.jwt_reset_secret as string,
@@ -247,7 +242,9 @@ const forgotPassword = async (payload: IForgotPasswordBody): Promise<void> => {
 };
 
 // ─── Reset Password ───────────────────────────────────────────────────────────
-const resetPassword = async (payload: IResetPasswordBody): Promise<void> => {
+const resetPasswordIntoDB = async (
+  payload: TResetPasswordBody,
+): Promise<void> => {
   let decoded: JwtPayload;
 
   try {
@@ -263,24 +260,24 @@ const resetPassword = async (payload: IResetPasswordBody): Promise<void> => {
   }
 
   const user = await User.findById(decoded.userId).select('+password');
+
   if (!user || user.isDeleted || user.isBlocked)
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
 
   user.password = payload.newPassword;
   await user.save();
 
-  // Invalidate all existing sessions on password reset
   await User.findByIdAndUpdate(decoded.userId, { refreshToken: null });
 };
 
 // ─── OAuth: Find or Create ────────────────────────────────────────────────────
 const findOrCreateOAuthUser = async (
-  profile: IOAuthProfile & {
+  profile: TOAuthProfile & {
     name: string;
     email: string;
     profilePhoto?: string;
   },
-): Promise<ILoginResult> => {
+): Promise<TLoginResult> => {
   let user = await User.findOne({
     oauthProfiles: {
       $elemMatch: {
@@ -291,11 +288,9 @@ const findOrCreateOAuthUser = async (
   });
 
   if (!user) {
-    // Try to link to existing account with same email
     user = await User.findOne({ email: profile.email });
 
     if (user) {
-      // Link new OAuth provider to existing account
       user.oauthProfiles.push({
         provider: profile.provider,
         providerId: profile.providerId,
@@ -304,12 +299,11 @@ const findOrCreateOAuthUser = async (
       });
       await user.save();
     } else {
-      // Create brand-new user
       user = await User.create({
         name: profile.name,
         email: profile.email,
         profilePhoto: profile.profilePhoto,
-        isVerified: true, // OAuth users are pre-verified
+        isVerified: true,
         oauthProfiles: [
           {
             provider: profile.provider,
@@ -322,7 +316,7 @@ const findOrCreateOAuthUser = async (
     }
   }
 
-  const jwtPayload: IJwtPayload = {
+  const jwtPayload: TJwtPayload = {
     userId: String(user._id),
     email: user.email,
     role: user.role,
@@ -342,41 +336,57 @@ const findOrCreateOAuthUser = async (
   };
 };
 
-// ─── RBAC: Update User Role ───────────────────────────────────────────────────
-const updateUserRole = async (
+// ─── RBAC: Update Role ────────────────────────────────────────────────────────
+const updateUserRoleIntoDB = async (
   userId: string,
-  newRole: string,
+  newRole: TUserRole,
 ): Promise<void> => {
   const user = await User.findById(userId);
+
   if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+
   if (user.role === 'superAdmin')
     throw new AppError(httpStatus.FORBIDDEN, 'Cannot modify superAdmin role');
 
-  await User.findByIdAndUpdate(userId, { role: newRole });
+  user.role = newRole;
+  await user.save();
 };
 
-// ─── RBAC: Block / Unblock User ───────────────────────────────────────────────
-const toggleBlockUser = async (
+// ─── RBAC: Block / Unblock ────────────────────────────────────────────────────
+const toggleBlockUserIntoDB = async (
   userId: string,
   block: boolean,
 ): Promise<void> => {
   const user = await User.findById(userId);
+
   if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+
   if (user.role === 'superAdmin')
     throw new AppError(httpStatus.FORBIDDEN, 'Cannot block superAdmin');
 
-  await User.findByIdAndUpdate(userId, { isBlocked: block });
+  user.isBlocked = block;
+  await user.save();
+};
+
+// ─── Get Me ───────────────────────────────────────────────────────────────────
+const getMeFromDB = async (userId: string) => {
+  const result = await User.findById(userId);
+
+  if (!result) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+
+  return result;
 };
 
 export const AuthServices = {
-  register,
-  login,
+  registerIntoDB,
+  loginFromDB,
   refreshTokens,
   logout,
-  changePassword,
+  changePasswordIntoDB,
   forgotPassword,
-  resetPassword,
+  resetPasswordIntoDB,
   findOrCreateOAuthUser,
-  updateUserRole,
-  toggleBlockUser,
+  updateUserRoleIntoDB,
+  toggleBlockUserIntoDB,
+  getMeFromDB,
 };
