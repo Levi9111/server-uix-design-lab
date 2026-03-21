@@ -57,7 +57,7 @@ const deleteFAQ = catchAsync(async (req, res) => {
   });
 });
 
-export const FAQsContorllers = {
+export const FAQsControllers = {
   createFAQ,
   getAllFAQs,
   getSingleFAQ,

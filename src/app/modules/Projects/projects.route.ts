@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ProjectValidations } from './projects.validation';
 import { fileUploader } from '../../utils/fileUploader';
-import validateRequest from '../../../app/middlewares/validateRequest';
+import validateRequest from '../../middlewares/validateRequest';
 import { ProjectsControllers } from './projects.controller';
 
 const router = Router();

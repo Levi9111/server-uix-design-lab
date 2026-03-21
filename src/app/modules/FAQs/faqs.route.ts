@@ -1,26 +1,26 @@
 import { Router } from 'express';
-import { FAQsContorllers } from './faqs.controller';
+import { FAQsControllers } from './faqs.controller';
 import validateRequest from '../../middlewares/validateRequest';
 import { faqValidations } from './faqs.validation';
 
 const router = Router();
 
-router.get('/', FAQsContorllers.getAllFAQs);
+router.get('/', FAQsControllers.getAllFAQs);
 
-router.get('/:id', FAQsContorllers.getSingleFAQ);
+router.get('/:id', FAQsControllers.getSingleFAQ);
 
 router.post(
   '/',
   validateRequest(faqValidations.createFAQValidationSchema),
-  FAQsContorllers.createFAQ,
+  FAQsControllers.createFAQ,
 );
 
 router.patch(
   '/update-faq/:id',
   validateRequest(faqValidations.updateFAQValidationSchema),
-  FAQsContorllers.updateFAQ,
+  FAQsControllers.updateFAQ,
 );
 
-router.delete('/delete-faq/:id', FAQsContorllers.deleteFAQ);
+router.delete('/delete-faq/:id', FAQsControllers.deleteFAQ);
 
 export const FAQsRoute = router;

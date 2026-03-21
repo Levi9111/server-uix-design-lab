@@ -9,7 +9,7 @@ const createProject = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Product is created succesfully',
+    message: 'Project is created succesfully',
     data: result,
   });
 });

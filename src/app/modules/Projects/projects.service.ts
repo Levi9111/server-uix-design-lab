@@ -3,7 +3,7 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import { TProjects } from './projects.interface';
 import { Projects } from './projects.model';
-import { fileUploader } from '../../../app/utils/fileUploader';
+import { fileUploader } from '../../utils/fileUploader';
 
 // Create Project
 const createProjectIntoDB = async (req: Request) => {

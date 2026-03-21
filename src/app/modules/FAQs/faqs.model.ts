@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
 import { TFAQ } from './faqs.interface';
 
-const faqsShhema = new Schema<TFAQ>(
+const faqsSchema = new Schema<TFAQ>(
   {
     question: {
       type: String,
@@ -19,4 +19,4 @@ const faqsShhema = new Schema<TFAQ>(
   { timestamps: true },
 );
 
-export const FAQ = model<TFAQ>('FAQ', faqsShhema);
+export const FAQ = model<TFAQ>('FAQ', faqsSchema);
