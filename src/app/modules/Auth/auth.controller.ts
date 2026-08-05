@@ -1,207 +1,51 @@
 import { Request, Response } from 'express';
-import httpStatus from 'http-status';
-
-import { AuthServices } from './auth.service';
-import { TJwtPayload } from './auth.interface';
-import config from '../../config';
+import { StatusCodes } from 'http-status-codes';
 import { catchAsync } from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
+import { AuthService } from './auth.service';
+import { TLoginResponse } from './auth.interface';
 
-// ─── Cookie Options ───────────────────────────────────────────────────────────
-const REFRESH_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: config.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-};
-
-// ─── Register ─────────────────────────────────────────────────────────────────
-const register = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthServices.registerIntoDB(req.body);
-
-  res.cookie(
-    'refreshToken',
-    result.tokens.refreshToken,
-    REFRESH_COOKIE_OPTIONS,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    success: true,
-    message: 'Registered successfully',
-    data: {
-      user: result.user,
-      accessToken: result.tokens.accessToken,
-    },
-  });
-});
-
-// ─── Login ────────────────────────────────────────────────────────────────────
 const login = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthServices.loginFromDB(req.body);
+  const result = await AuthService.loginUser(req.body);
 
-  res.cookie(
-    'refreshToken',
-    result.tokens.refreshToken,
-    REFRESH_COOKIE_OPTIONS,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Logged in successfully',
-    data: {
-      user: result.user,
-      accessToken: result.tokens.accessToken,
-    },
-  });
-});
-
-// ─── Refresh Token ────────────────────────────────────────────────────────────
-const refreshToken = catchAsync(async (req: Request, res: Response) => {
-  const incomingToken = req.cookies?.refreshToken;
-  const result = await AuthServices.refreshTokens(incomingToken);
-
-  res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Token refreshed successfully',
-    data: { accessToken: result.accessToken },
-  });
-});
-
-// ─── Logout ───────────────────────────────────────────────────────────────────
-const logout = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.logout((req.user as TJwtPayload).userId);
-
-  res.clearCookie('refreshToken', {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
     httpOnly: true,
-    secure: config.NODE_ENV === 'production',
-    sameSite: 'strict',
-  });
+    secure: isProduction,
+    sameSite: 'strict' as const,
+    path: '/',
+  };
+
+  res.cookie('accessToken',  result.accessToken,  { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+  res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
   sendResponse(res, {
-    statusCode: httpStatus.OK,
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User logged in successfully',
+    data: result.user,
+  });
+});
+
+const logout = catchAsync(async (_req: Request, res: Response) => {
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
     success: true,
     message: 'Logged out successfully',
+    data: null,
   });
 });
 
-// ─── Change Password ──────────────────────────────────────────────────────────
-const changePassword = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.changePasswordIntoDB(
-    (req.user as TJwtPayload).userId,
-    req.body,
-  );
-
+const getProfile = catchAsync(async (req: Request, res: Response) => {
+  const { userId, role } = req.user;
   sendResponse(res, {
-    statusCode: httpStatus.OK,
+    statusCode: StatusCodes.OK,
     success: true,
-    message: 'Password changed successfully',
+    message: 'Profile fetched successfully',
+    data: { id: userId, role },
   });
 });
 
-// ─── Forgot Password ──────────────────────────────────────────────────────────
-const forgotPassword = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.forgotPassword(req.body);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'If that email exists, a reset link has been sent',
-  });
-});
-
-// ─── Reset Password ───────────────────────────────────────────────────────────
-const resetPassword = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.resetPasswordIntoDB(req.body);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Password reset successfully',
-  });
-});
-
-// ─── OAuth Callback ───────────────────────────────────────────────────────────
-const oauthCallback = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthServices.findOrCreateOAuthUser(req.user as any);
-
-  res.cookie('refreshToken', result.tokens.refreshToken, {
-    ...REFRESH_COOKIE_OPTIONS,
-    sameSite: 'lax',
-  });
-
-  res.cookie('accessToken', result.tokens.accessToken, {
-    httpOnly: true,
-    secure: config.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.redirect(`${config.client_url}/oauth/callback`);
-});
-
-// ─── Get Me ───────────────────────────────────────────────────────────────────
-const getMe = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthServices.getMeFromDB(
-    (req.user as TJwtPayload).userId,
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Profile retrieved successfully',
-    data: result,
-  });
-});
-
-// ─── Update Role ──────────────────────────────────────────────────────────────
-const updateUserRole = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.updateUserRoleIntoDB(req.params.userId, req.body.role);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'User role updated successfully',
-  });
-});
-
-// ─── Block User ───────────────────────────────────────────────────────────────
-const blockUser = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.toggleBlockUserIntoDB(req.params.userId, true);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'User blocked successfully',
-  });
-});
-
-// ─── Unblock User ─────────────────────────────────────────────────────────────
-const unblockUser = catchAsync(async (req: Request, res: Response) => {
-  await AuthServices.toggleBlockUserIntoDB(req.params.userId, false);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'User unblocked successfully',
-  });
-});
-
-export const AuthControllers = {
-  register,
-  login,
-  refreshToken,
-  logout,
-  changePassword,
-  forgotPassword,
-  resetPassword,
-  oauthCallback,
-  getMe,
-  updateUserRole,
-  blockUser,
-  unblockUser,
-};
+export const AuthControllers = { login, logout, getProfile };

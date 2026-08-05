@@ -1,40 +1,14 @@
 import { Router } from 'express';
-import { FAQsRoute } from '../modules/FAQs/faqs.route';
-import { PricingRoute } from '../modules/Pricing/pricing.route';
-import { FeaturesRoute } from '../modules/Features/features.route';
-import { ProjectRoutes } from '../modules/Projects/projects.route';
-import { ReviewsRoute } from '../modules/Reviews/reviews.route';
-import { AuthRoute } from '../modules/Auth/auth.route';
+import { AuthRoutes } from '../modules/Auth/auth.route';
+// --- INJECT IMPORTS HERE ---
 
 const router = Router();
 
 const moduleRoutes = [
-  {
-    path: '/faqs',
-    router: FAQsRoute,
-  },
-  {
-    path: '/pricing',
-    router: PricingRoute,
-  },
-  {
-    path: '/features',
-    router: FeaturesRoute,
-  },
-  {
-    path: '/projects',
-    router: ProjectRoutes,
-  },
-  {
-    path: '/reviews',
-    router: ReviewsRoute,
-  },
-  {
-    path: '/auth',
-    router: AuthRoute,
-  },
+    { path: '/auth', route: AuthRoutes },
+  // --- INJECT ROUTES HERE ---
 ];
 
-moduleRoutes.forEach((route) => router.use(route.path, route.router));
+moduleRoutes.forEach((route) => router.use(route.path, route.route));
 
 export default router;

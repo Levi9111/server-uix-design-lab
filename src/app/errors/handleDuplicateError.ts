@@ -1,23 +1,12 @@
-import { TErrorSources, TGenericErrorResponse } from '../interface/error';
+import { TErrorSources, TGenericErrorResponse } from '../interfaces/error';
 
-const handleDuplicateError = (err: any): TGenericErrorResponse => {
+const handleDuplicateError = (err: { message: string }): TGenericErrorResponse => {
   const match = err.message.match(/"([^"]*)"/);
-
-  const extractedMessage = match && match[1];
-
+  const extractedMessage = match ? match[1] : 'Field';
   const errorSources: TErrorSources = [
-    {
-      path: '',
-      message: `${extractedMessage} already exists`,
-    },
+    { path: '', message: `'${extractedMessage}' already exists` },
   ];
-
-  const statusCode = 400;
-  return {
-    statusCode,
-    message: 'Invalid ID',
-    errorSources,
-  };
+  return { statusCode: 409, message: 'Duplicate Entry', errorSources };
 };
 
 export default handleDuplicateError;

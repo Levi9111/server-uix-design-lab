@@ -1,24 +1,19 @@
 import mongoose from 'mongoose';
-import config from './app/config';
 import app from './app';
+import config from './app/config';
 
-const main = async () => {
+async function bootstrap() {
   try {
-    const databaseConnection = await mongoose.connect(config.database_url!);
+    await mongoose.connect(config.databaseUrl);
+    console.log('✅ MongoDB connected');
 
-    if (databaseConnection.connection.readyState === 1) {
-      console.log('🟢 Database connected successfully');
-    } else {
-      console.log('🟡 MongoDB connected but not ready');
-    }
-
-    app.listen(config.port, () =>
-      console.log(`Server running on port ${config.port}`),
-    );
+    app.listen(config.port, () => {
+      console.log(`🚀 Server running on http://localhost:${config.port}`);
+    });
   } catch (error) {
-    console.error('🔴 Failed to connect to MongoDB:', error);
+    console.error('❌ Failed to connect to MongoDB:', error);
     process.exit(1);
   }
-};
+}
 
-main();
+bootstrap();

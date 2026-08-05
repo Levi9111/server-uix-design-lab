@@ -1,61 +1,47 @@
-import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import logger from './app/utils/logger';
+import { cemWelcomePage } from './app/utils/welcomePage';
 import cookieParser from 'cookie-parser';
-import passport from 'passport';
-
+import { globalRateLimiter } from './app/middlewares/rateLimiter.middleware';
 import router from './app/routes';
-import globalErrorHandler from './app/middlewares/globalErrorhandler';
-import notFound from './app/middlewares/notFound';
-import config from './app/config';
-import { initPassport } from './app/middlewares/passport';
+import notFound from './app/middlewares/notFound.middleware';
+import globalErrorHandler from './app/middlewares/globalErrorHandler.middleware';
 
 const app: Application = express();
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-// Supports multiple origins via comma-separated CLIENT_URL env var
-// e.g. CLIENT_URL=http://localhost:5173,https://dashboard-uix-design-lab.vercel.app
-const allowedOrigins = (config.client_url as string)
-  .split(',')
-  .map((url) => url.trim());
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, server-to-server)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS: origin ${origin} is not allowed`));
-      }
-    },
-    credentials: true,
-  }),
-);
-
-// ─── Parsers ──────────────────────────────────────────────────────────────────
+// ── Global Middlewares ────────────────────────────────────────────────────────
+app.use(helmet());
+app.use(cors());
+app.use(globalRateLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ─── Passport ─────────────────────────────────────────────────────────────────
-// Register strategies first, then initialize — must come before routes
-initPassport();
-app.use(passport.initialize() as unknown as express.Handler);
-
-// ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/v1', router);
-
-// ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/', (_req: Request, res: Response) => {
-  res.send('Mongoose Express server application');
+// ── Root ──────────────────────────────────────────────────────────────────────
+app.get('/', (_req: Request, res: Response): void => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(cemWelcomePage());
 });
 
-// ─── Not Found ────────────────────────────────────────────────────────────────
-app.use(notFound);
+// ── Health Check ──────────────────────────────────────────────────────────────
+app.get('/health', (_req: Request, res: Response): void => {
+  const uptime = process.uptime();
+  const timestamp = new Date().toISOString();
+  logger.info(`Health check called — uptime: ${uptime.toFixed(2)}s`);
+  res.status(200).json({
+    status: 'ok',
+    uptime: parseFloat(uptime.toFixed(2)),
+    timestamp,
+  });
+});
 
-// ─── Global Error Handler ─────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
+app.use('/api/v1', router);
+
+// ── Error Handlers (must be last) ────────────────────────────────────────────
+app.use(notFound);
 app.use(globalErrorHandler);
 
 export default app;
